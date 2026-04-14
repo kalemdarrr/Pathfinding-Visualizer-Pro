@@ -29,14 +29,14 @@ TEXT_COLOR = (32, 33, 36)       # Sharp dark gray text
 TEXT_MUTED = (95, 99, 104)      # Subdued text
 HIGHLIGHT = (26, 115, 232)      # Professional blue accent
 
-# Legend Colors (Must match what grid.py sees ideally, but grid imports its own colors)
+# Legend Colors
 RED = (234, 67, 53)     # Google Red
 GREEN = (52, 168, 83)   # Google Green
 BLUE = (66, 133, 244)   # Theme Blue
 YELLOW = (251, 188, 5)  # Google Yellow
 BLACK = (60, 64, 67)    # Soft Black
 
-# Safe Fonts (Using Arial for widespread compatibility and sharpness)
+# Safe Fonts
 FONT_TITLE = pygame.font.SysFont("Arial", 22, bold=True)
 FONT_BOLD = pygame.font.SysFont("Arial", 14, bold=True)
 FONT_TEXT = pygame.font.SysFont("Arial", 14)
@@ -75,21 +75,21 @@ def draw_top_bar(algorithm):
     WIN.blit(ctrl1_surf, (x_pos1, int(22)))
     WIN.blit(ctrl2_surf, (x_pos2, int(48)))
 
-def draw_side_panel():
+def draw_side_panel(app_status, visited_count, path_length):
     # Draw Background
     pygame.draw.rect(WIN, PANEL_BG, (0, TOP_BAR_HEIGHT, LEFT_PANEL_WIDTH, HEIGHT - TOP_BAR_HEIGHT))
     pygame.draw.line(WIN, BORDER_COLOR, (LEFT_PANEL_WIDTH - 1, TOP_BAR_HEIGHT), (LEFT_PANEL_WIDTH - 1, HEIGHT), 2)
     
-    y_pos = int(TOP_BAR_HEIGHT + 25)
+    y_pos = int(TOP_BAR_HEIGHT + 15)
     x_pos = 20
     content_w = LEFT_PANEL_WIDTH - 40
     
     # Card 1: Instructions
-    inst_h = 290
+    inst_h = 245
     pygame.draw.rect(WIN, BG_COLOR, (x_pos, y_pos, content_w, inst_h), border_radius=8)
     pygame.draw.rect(WIN, BORDER_COLOR, (x_pos, y_pos, content_w, inst_h), 1, border_radius=8)
     
-    y_inst = y_pos + 15
+    y_inst = y_pos + 12
     x_inst = x_pos + 15
     
     inst_head = FONT_BOLD.render("INSTRUCTIONS", True, HIGHLIGHT)
@@ -112,21 +112,21 @@ def draw_side_panel():
     for line in instructions:
         surf = FONT_TEXT.render(line, True, TEXT_COLOR)
         WIN.blit(surf, (int(x_inst), int(y_inst)))
-        y_inst += 22
+        y_inst += 19
         
-    y_pos += inst_h + 20
+    y_pos += inst_h + 15
     
     # Card 2: Color Legend
-    leg_h = 200
+    leg_h = 175
     pygame.draw.rect(WIN, BG_COLOR, (x_pos, y_pos, content_w, leg_h), border_radius=8)
     pygame.draw.rect(WIN, BORDER_COLOR, (x_pos, y_pos, content_w, leg_h), 1, border_radius=8)
     
-    y_leg = y_pos + 15
+    y_leg = y_pos + 12
     x_leg = x_pos + 15
     
     leg_head = FONT_BOLD.render("COLOR LEGEND", True, HIGHLIGHT)
     WIN.blit(leg_head, (int(x_leg), int(y_leg)))
-    y_leg += 30
+    y_leg += 25
     
     legend_items = [
         ("Start Node", GREEN),
@@ -141,7 +141,41 @@ def draw_side_panel():
         pygame.draw.rect(WIN, color, (int(x_leg), int(y_leg), BOX_SIZE, BOX_SIZE), border_radius=3)
         lbl_surf = FONT_TEXT.render(label, True, TEXT_COLOR)
         WIN.blit(lbl_surf, (int(x_leg + BOX_SIZE + 12), int(y_leg - 1)))
-        y_leg += 26
+        y_leg += 24
+        
+    y_pos += leg_h + 15
+    
+    # Card 3: Status & Metrics
+    stat_h = 125
+    pygame.draw.rect(WIN, BG_COLOR, (x_pos, y_pos, content_w, stat_h), border_radius=8)
+    pygame.draw.rect(WIN, BORDER_COLOR, (x_pos, y_pos, content_w, stat_h), 1, border_radius=8)
+    
+    y_stat = y_pos + 12
+    x_stat = x_pos + 15
+    
+    stat_head = FONT_BOLD.render("STATISTICS", True, HIGHLIGHT)
+    WIN.blit(stat_head, (int(x_stat), int(y_stat)))
+    y_stat += 25
+    
+    # Dynamic Status Color Highlight
+    status_col = TEXT_COLOR
+    if app_status == "Completed!":
+        status_col = GREEN
+    elif app_status == "Failed (No Path)":
+        status_col = RED
+    elif app_status == "Searching...":
+        status_col = HIGHLIGHT
+
+    status_surf = FONT_TEXT.render(f"Status: {app_status}", True, status_col)
+    visited_surf = FONT_TEXT.render(f"Visited Nodes: {visited_count}", True, TEXT_COLOR)
+    length_surf = FONT_TEXT.render(f"Path Length: {path_length}", True, TEXT_COLOR)
+    
+    WIN.blit(status_surf, (int(x_stat), int(y_stat)))
+    y_stat += 24
+    WIN.blit(visited_surf, (int(x_stat), int(y_stat)))
+    y_stat += 24
+    WIN.blit(length_surf, (int(x_stat), int(y_stat)))
+
 
 def get_clicked_pos(pos, rows, width, x_offset, y_offset):
     x, y = pos
@@ -160,12 +194,13 @@ def get_clicked_pos(pos, rows, width, x_offset, y_offset):
     return None
 
 def draw_grid_container():
-    # Draw modern backing behind the grid so it stands out cleanly
     pygame.draw.rect(WIN, PANEL_BG, (X_OFFSET - 2, Y_OFFSET - 2, GRID_SIZE + 4, GRID_SIZE + 4), border_radius=6)
     pygame.draw.rect(WIN, BORDER_COLOR, (X_OFFSET - 2, Y_OFFSET - 2, GRID_SIZE + 4, GRID_SIZE + 4), 1, border_radius=6)
 
-def handle_input(event, start, end, grid, algorithm_selected, win_surface):
+def handle_input(event, start, end, grid, algorithm_selected):
     run_algo = False
+    clear_trigger = False
+    
     if pygame.mouse.get_pressed()[0]: # Left click
         pos = pygame.mouse.get_pos()
         clicked = get_clicked_pos(pos, ROWS, GRID_SIZE, X_OFFSET, Y_OFFSET)
@@ -209,8 +244,9 @@ def handle_input(event, start, end, grid, algorithm_selected, win_surface):
             start = None
             end = None
             grid = make_grid(ROWS, GRID_SIZE)
+            clear_trigger = True
 
-    return algorithm_selected, start, end, grid, run_algo
+    return algorithm_selected, start, end, grid, run_algo, clear_trigger
 
 def main():
     grid = make_grid(ROWS, GRID_SIZE)
@@ -221,10 +257,15 @@ def main():
     run = True
     algorithm_selected = 1 # 1 = BFS, 2 = DFS, 3 = Dijkstra
     
+    # State tracking variables
+    app_status = "Idle"
+    visited_count = 0
+    path_length = 0
+    
     while run:
         WIN.fill(BG_COLOR)
         draw_top_bar(algorithm_selected)
-        draw_side_panel()
+        draw_side_panel(app_status, visited_count, path_length)
         draw_grid_container()
         draw(WIN, grid, ROWS, GRID_SIZE, X_OFFSET, Y_OFFSET)
         
@@ -232,11 +273,29 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
 
-            algorithm_selected, start, end, grid, run_algo = handle_input(
-                event, start, end, grid, algorithm_selected, WIN
+            algorithm_selected, start, end, grid, run_algo, clear_trigger = handle_input(
+                event, start, end, grid, algorithm_selected
             )
             
+            if clear_trigger:
+                app_status = "Idle"
+                visited_count = 0
+                path_length = 0
+            
             if run_algo:
+                # Setup Search Initial State
+                app_status = "Searching..."
+                visited_count = 0
+                path_length = 0
+                
+                # Render the searching state explicitly before locking main loop
+                WIN.fill(BG_COLOR)
+                draw_top_bar(algorithm_selected)
+                draw_side_panel(app_status, visited_count, path_length)
+                draw_grid_container()
+                draw(WIN, grid, ROWS, GRID_SIZE, X_OFFSET, Y_OFFSET)
+                
+                # Clear previous artifacts
                 for row in grid:
                     for node in row:
                         if node.is_visited() or node.color == YELLOW:
@@ -246,19 +305,27 @@ def main():
                     for node in row:
                         node.update_neighbors(grid)
                 
+                # Lambda to update visualizer incrementally 
                 def draw_func():
                     WIN.fill(BG_COLOR)
                     draw_top_bar(algorithm_selected)
-                    draw_side_panel()
+                    draw_side_panel(app_status, visited_count, path_length)
                     draw_grid_container()
                     draw(WIN, grid, ROWS, GRID_SIZE, X_OFFSET, Y_OFFSET)
                 
+                success = False
                 if algorithm_selected == 1:
-                    bfs(draw_func, start, end, DELAY_MS)
+                    success, visited_count, path_length = bfs(draw_func, start, end, DELAY_MS)
                 elif algorithm_selected == 2:
-                    dfs(draw_func, start, end, DELAY_MS)
+                    success, visited_count, path_length = dfs(draw_func, start, end, DELAY_MS)
                 elif algorithm_selected == 3:
-                    dijkstra(draw_func, start, end, DELAY_MS)
+                    success, visited_count, path_length = dijkstra(draw_func, start, end, DELAY_MS)
+                    
+                # Evaluate final outcome
+                if success:
+                    app_status = "Completed!"
+                else:
+                    app_status = "Failed (No Path)"
 
     pygame.quit()
     sys.exit()

@@ -3,12 +3,15 @@ from collections import deque
 import heapq
 
 def reconstruct_path(current, draw_func):
+    path_len = 0
     while current.previous:
+        path_len += 1
         current = current.previous
         if not current.is_start():
             current.make_path()
             draw_func()
             pygame.time.delay(10)
+    return path_len
 
 def bfs(draw_func, start, end, delay_ms):
     queue = deque([start])
@@ -18,16 +21,16 @@ def bfs(draw_func, start, end, delay_ms):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return False
+                return False, len(visited), 0
 
         current = queue.popleft()
 
         if current == end:
-            reconstruct_path(end, draw_func)
+            path_len = reconstruct_path(end, draw_func)
             end.make_end()
             start.make_start()
             draw_func()
-            return True
+            return True, len(visited), path_len
 
         for neighbor in current.neighbors:
             if neighbor not in visited:
@@ -40,7 +43,7 @@ def bfs(draw_func, start, end, delay_ms):
         draw_func()
         pygame.time.delay(delay_ms)
 
-    return False
+    return False, len(visited), 0
 
 def dfs(draw_func, start, end, delay_ms):
     stack = [start]
@@ -50,18 +53,17 @@ def dfs(draw_func, start, end, delay_ms):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return False
+                return False, len(visited), 0
 
         current = stack.pop()
 
         if current == end:
-            reconstruct_path(end, draw_func)
+            path_len = reconstruct_path(end, draw_func)
             end.make_end()
             start.make_start()
             draw_func()
-            return True
+            return True, len(visited), path_len
 
-        # To match typical DFS visual exploration, maybe reverse neighbors
         for neighbor in current.neighbors:
             if neighbor not in visited:
                 neighbor.previous = current
@@ -73,7 +75,7 @@ def dfs(draw_func, start, end, delay_ms):
         draw_func()
         pygame.time.delay(delay_ms)
 
-    return False
+    return False, len(visited), 0
 
 def dijkstra(draw_func, start, end, delay_ms):
     count = 0
@@ -85,7 +87,7 @@ def dijkstra(draw_func, start, end, delay_ms):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
-                return False
+                return False, len(visited), 0
 
         current_dist, _, current = heapq.heappop(pq)
         
@@ -95,11 +97,11 @@ def dijkstra(draw_func, start, end, delay_ms):
         visited.add(current)
 
         if current == end:
-            reconstruct_path(end, draw_func)
+            path_len = reconstruct_path(end, draw_func)
             end.make_end()
             start.make_start()
             draw_func()
-            return True
+            return True, len(visited), path_len
 
         for neighbor in current.neighbors:
             temp_dist = current.distance + 1
@@ -115,4 +117,4 @@ def dijkstra(draw_func, start, end, delay_ms):
         draw_func()
         pygame.time.delay(delay_ms)
 
-    return False
+    return False, len(visited), 0
