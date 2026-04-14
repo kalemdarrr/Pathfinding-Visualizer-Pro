@@ -4,6 +4,8 @@ A modern, highly professional desktop application built with Python and Pygame. 
 
  Features
 - **Clean & Modern UI**: Designed with a sharp, card-based interface, clear layouts, and professional aesthetic tones.
+- **Advanced UI Metrics**: A dedicated statistics panel dynamically tracks the search state (`Searching...`, `Completed!`), the exact number of `Visited Nodes`, and the final `Path Length`.
+- **Intelligent Failure States**: The visualizer handles unsolvable grids gracefully, surfacing an explicit `Failed (No Path)` status when blocked rather than failing invisibly.
 - **Real-Time Visualization**: Watch search algorithms step through and evaluate the grid natively with controlled animations.
 - **Interactive Map**: Draw and erase your very own walls/barriers and assign start/end coordinates on the fly using mouse controls.
 
